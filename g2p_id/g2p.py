@@ -22,7 +22,6 @@ from builtins import str as unicode
 from itertools import permutations
 from typing import Dict, List, Tuple, Union
 import asyncio
-import libsql_client
 
 import nltk
 from nltk.tag.perceptron import PerceptronTagger
@@ -37,8 +36,7 @@ import logging
 
 # Configure logging at the top of the file after imports
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,7 +45,9 @@ nltk.download("wordnet")
 resources_path = os.path.join(os.path.dirname(__file__), "resources")
 
 
-def construct_homographs_dictionary(turso_config=None) -> Dict[str, Tuple[str, str, str, str]]:
+def construct_homographs_dictionary(
+    turso_config=None,
+) -> Dict[str, Tuple[str, str, str, str]]:
     """Creates a dictionary of homographs.
     If turso_config is provided, fetches from Turso database.
     Otherwise, loads from local TSV file.
@@ -63,7 +63,6 @@ def construct_homographs_dictionary(turso_config=None) -> Dict[str, Tuple[str, s
     if turso_config:
         _LOGGER.info("Loading homographs from Turso database...")
         return asyncio.run(_fetch_homographs_from_turso(turso_config))
-    
     _LOGGER.info("Loading homographs from local TSV file...")
     homograph_path = os.path.join(resources_path, "homographs_id.tsv")
     homograph2features = {}
@@ -95,7 +94,6 @@ def construct_lexicon_dictionary(turso_config=None) -> Dict[str, str]:
     if turso_config:
         _LOGGER.info("Loading lexicon from Turso database...")
         return asyncio.run(_fetch_lexicon_from_turso(turso_config))
-    
     _LOGGER.info("Loading lexicon from local TSV file...")
     lexicon_path = os.path.join(resources_path, "lexicon_id.tsv")
     lexicon2features = {}
@@ -106,9 +104,8 @@ def construct_lexicon_dictionary(turso_config=None) -> Dict[str, str]:
             lexicon2features[grapheme.lower()] = phoneme
     return lexicon2features
 
-
 def construct_online_lexicon(turso_config):
-    return 
+    return
 
 
 class G2p:
@@ -134,7 +131,6 @@ class G2p:
         """
         self.homograph2features = construct_homographs_dictionary(turso_config)
         self.lexicon2features = construct_lexicon_dictionary(turso_config)
-        
         self.normalizer = TextProcessor()
         self.tagger = PerceptronTagger(load=False)
         tagger_path = os.path.join(resources_path, "id_posp_tagger.pickle")
@@ -167,7 +163,11 @@ class G2p:
         text = re.sub(r"\.(?=.*\.)", " ", text)
         text = " ".join(self.tokenizer.tokenize(text))
         text = unicode(text)
-        text = "".join(char for char in unicodedata.normalize("NFD", text) if unicodedata.category(char) != "Mn")
+        text = "".join(
+            char
+            for char in unicodedata.normalize("NFD", text)
+            if unicodedata.category(char) != "Mn"
+        )
         text = self.normalizer.normalize(text).strip()
         text = text.lower()
         text = re.sub(r"[^ a-z'.,?!\-]", "", text)
@@ -210,7 +210,10 @@ class G2p:
         for graph, phone in phonetic_mapping.items():
             text = text.replace(graph, phone)
 
-        phonemes = [list(phn) if phn not in ("dʒ", "tʃ") else [phn] for phn in re.split("(tʃ|dʒ)", text)]
+        phonemes = [
+            list(phn) if phn not in ("dʒ", "tʃ") else [phn]
+            for phn in re.split("(tʃ|dʒ)", text)
+        ]
         return " ".join([p for phn in phonemes for p in phn])
 
     def __call__(self, text: str) -> List[List[str]]:

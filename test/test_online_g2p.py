@@ -41,7 +41,7 @@ class TestPhonemeFunctions(unittest.TestCase):
         error_log_path = 'phoneme_comparison_errors.log'
         file_path = '/home/s44504/3b01c699-3670-469b-801f-13880b9cac56/dataset_creation/data/indonesian_book_transcripts.txt'
         
-        with open(file_path, 'r') as file, open(error_log_path, 'w') as error_log:
+        with open(file_path, 'r') as file:
             lines = file.readlines()
             for line_number, line in tqdm(enumerate(lines, start=1), total=len(lines), desc="Indonesia Test Progress"):
                 line = line.strip()
@@ -63,11 +63,9 @@ class TestPhonemeFunctions(unittest.TestCase):
                         Text: {line}
                         Differences: {' | '.join(differences)}
                         """
-                        error_log.write(error_message + "\n")
                         logging.warning(error_message)
                 except Exception as e:
                     error_message = f"Error processing line {line_number}: {line}\nError: {str(e)}\n"
-                    error_log.write(error_message)
                     logging.error(error_message)
 
 if __name__ == '__main__':

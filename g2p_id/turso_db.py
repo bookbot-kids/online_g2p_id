@@ -1,9 +1,7 @@
 import asyncio
 import logging
 import time
-import typing
-from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 import libsql_client
 
@@ -128,9 +126,9 @@ async def _fetch_homographs_from_turso(
         results = await asyncio.gather(*tasks)
 
         # Process results into dictionary
-        homographs = {}
-        current_word = None
-        current_data = []
+        homographs: Dict[str, Tuple[str, str, str, str]] = {}
+        current_word: str | None = None
+        current_data: List[Tuple[str, str]] = []
         total_pairs = 0
 
         # Process all results
@@ -141,7 +139,7 @@ async def _fetch_homographs_from_turso(
 
                 if current_word != word:
                     # Store previous word's data if we have a complete pair
-                    if len(current_data) == 2:
+                    if len(current_data) == 2 and current_word is not None:
                         homographs[current_word] = (
                             current_data[0][0],  # ph1
                             current_data[1][0],  # ph2
@@ -158,7 +156,7 @@ async def _fetch_homographs_from_turso(
                         current_data.append((phonemes, role))
 
         # Don't forget to process the last word
-        if len(current_data) == 2:
+        if len(current_data) == 2 and current_word is not None:
             homographs[current_word] = (
                 current_data[0][0],  # ph1
                 current_data[1][0],  # ph2
