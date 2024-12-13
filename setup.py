@@ -13,8 +13,9 @@ with open(requirements_path, "r", encoding="utf-8") as requirements_file:
 
 if __name__ == "__main__":
     setup(
-        name="g2p_id_py",
-        version="0.4.2",
+        name="g2p_id",
+        use_scm_version=True,
+        setup_requires=['setuptools_scm'],
         description="Indonesian G2P.",
         long_description=long_description,
         long_description_content_type="text/markdown",

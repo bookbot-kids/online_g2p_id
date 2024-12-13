@@ -32,7 +32,7 @@ This library is developed to convert Indonesian (Bahasa Indonesia) graphemes (wo
 ## Installation
 
 ```bash
-pip install g2p_id_py
+pip install git+https://github.com/bookbot-kids/online_g2p_id.git
 ```
 
 ## How to Use
