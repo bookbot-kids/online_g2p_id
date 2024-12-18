@@ -18,38 +18,33 @@ import os
 import re
 import pickle
 import unicodedata
+import asyncio
+import nltk
+import logging
+
 from builtins import str as unicode
 from itertools import permutations
 from typing import Dict, List, Tuple, Union
-import asyncio
-
-import nltk
 from nltk.tag.perceptron import PerceptronTagger
 from nltk.tokenize import TweetTokenizer
-
 from g2p_id.bert import BERT
 from g2p_id.lstm import LSTM
 from g2p_id.text_processor import TextProcessor
 from g2p_id.turso_db import _fetch_lexicon_from_turso, _fetch_homographs_from_turso
 
-import logging
-
-# Configure logging at the top of the file after imports
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 _LOGGER = logging.getLogger(__name__)
-
-
 nltk.download("wordnet")
 resources_path = os.path.join(os.path.dirname(__file__), "resources")
-
 
 def construct_homographs_dictionary(
     turso_config=None,
 ) -> Dict[str, Tuple[str, str, str, str]]:
     """Creates a dictionary of homographs.
-    If turso_config is provided, fetches from Turso database.
+    If turso_config is provided, attempts to fetch from Turso database first,
+    falling back to local TSV file if fetch fails.
     Otherwise, loads from local TSV file.
 
     Args:
@@ -61,8 +56,13 @@ def construct_homographs_dictionary(
             Value: (PH1, PH2, POS1, POS2)
     """
     if turso_config:
-        _LOGGER.info("Loading homographs from Turso database...")
-        return asyncio.run(_fetch_homographs_from_turso(turso_config))
+        try:
+            _LOGGER.info("Loading homographs from Turso database...")
+            return asyncio.run(_fetch_homographs_from_turso(turso_config))
+        except Exception as e:
+            _LOGGER.warning(f"Failed to fetch from Turso DB: {e}. Falling back to local file.")
+
+    # Load from local file (either as fallback or primary source)
     _LOGGER.info("Loading homographs from local TSV file...")
     homograph_path = os.path.join(resources_path, "homographs_id.tsv")
     homograph2features = {}
@@ -74,10 +74,10 @@ def construct_homographs_dictionary(
 
     return homograph2features
 
-
 def construct_lexicon_dictionary(turso_config=None) -> Dict[str, str]:
     """Creates a lexicon dictionary.
-    If turso_config is provided, fetches from Turso database.
+    If turso_config is provided, attempts to fetch from Turso database first,
+    falling back to local TSV file if fetch fails.
     Otherwise, loads from local TSV file.
 
     Args:
@@ -92,8 +92,13 @@ def construct_lexicon_dictionary(turso_config=None) -> Dict[str, str]:
             Value: Phoneme (IPA)
     """
     if turso_config:
-        _LOGGER.info("Loading lexicon from Turso database...")
-        return asyncio.run(_fetch_lexicon_from_turso(turso_config))
+        try:
+            _LOGGER.info("Loading lexicon from Turso database...")
+            return asyncio.run(_fetch_lexicon_from_turso(turso_config))
+        except Exception as e:
+            _LOGGER.warning(f"Failed to fetch from Turso DB: {e}. Falling back to local file.")
+
+    # Load from local file (either as fallback or primary source)
     _LOGGER.info("Loading lexicon from local TSV file...")
     lexicon_path = os.path.join(resources_path, "lexicon_id.tsv")
     lexicon2features = {}
@@ -103,10 +108,6 @@ def construct_lexicon_dictionary(turso_config=None) -> Dict[str, str]:
             grapheme, phoneme = line.strip("\n").split("\t")
             lexicon2features[grapheme.lower()] = phoneme
     return lexicon2features
-
-def construct_online_lexicon(turso_config):
-    return
-
 
 class G2p:
     """Grapheme-to-phoneme (g2p) main class for phonemization.
